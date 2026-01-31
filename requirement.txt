@@ -6,7 +6,5 @@ langchain-groq
 python-dotenv
 bs4
 requests
-validators
-youtube-transcript-api
 pytube
 langchain-text-splitters
