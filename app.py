@@ -1,4 +1,3 @@
-import validators
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
@@ -20,17 +19,21 @@ st.title("📝 Website Summarizer")
 st.caption("Summarize long articles using LLMs with chunking")
 
 # ==================================================
-# SECRETS (STREAMLIT CLOUD SAFE)
+# SECRETS (LOCAL + STREAMLIT CLOUD SAFE)
 # ==================================================
-if "GROQ_API_KEY" not in st.secrets:
-    st.error("GROQ_API_KEY not found in Streamlit secrets")
+import os
+
+api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+
+if not api_key:
+    st.error("GROQ_API_KEY not found. Add it to Streamlit secrets.")
     st.stop()
 
 # ==================================================
 # LLM
 # ==================================================
 llm = ChatGroq(
-    api_key=st.secrets["GROQ_API_KEY"],
+    api_key=api_key,
     model="llama-3.1-8b-instant",
     temperature=0.3
 )
@@ -44,7 +47,7 @@ final_prompt = PromptTemplate.from_template(
 )
 
 # ==================================================
-# WEBSITE LOADER
+# WEBSITE CONTENT LOADER
 # ==================================================
 def load_website_chunks(url: str):
     response = requests.get(
@@ -62,6 +65,7 @@ def load_website_chunks(url: str):
 
     soup = BeautifulSoup(response.text, "html.parser")
 
+    # Remove non-content elements
     for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
         tag.decompose()
 
@@ -75,7 +79,7 @@ def load_website_chunks(url: str):
     return splitter.split_text(text)
 
 # ==================================================
-# SUMMARIZATION
+# HIERARCHICAL SUMMARIZATION
 # ==================================================
 def hierarchical_summarize(chunks):
     partial_summaries = []
@@ -95,8 +99,8 @@ def hierarchical_summarize(chunks):
 url = st.text_input("Paste a website URL")
 
 if st.button("Summarize"):
-    if not validators.url(url):
-        st.error("Please enter a valid website URL")
+    if not url.startswith(("http://", "https://")):
+        st.error("Please enter a valid website URL (must start with http:// or https://)")
     else:
         try:
             with st.spinner("Summarizing website content..."):
