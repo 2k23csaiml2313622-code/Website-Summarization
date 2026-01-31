@@ -1,7 +1,5 @@
-import os
 import validators
 import streamlit as st
-from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
 
@@ -10,13 +8,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # ==================================================
-# ENV
-# ==================================================
-load_dotenv()
-os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
-
-# ==================================================
-# UI
+# STREAMLIT CONFIG
 # ==================================================
 st.set_page_config(
     page_title="Website Summarizer",
@@ -27,12 +19,18 @@ st.set_page_config(
 st.title("📝 Website Summarizer")
 st.caption("Summarize long articles using LLMs with chunking")
 
-url = st.text_input("Paste a website URL")
+# ==================================================
+# SECRETS (STREAMLIT CLOUD SAFE)
+# ==================================================
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("GROQ_API_KEY not found in Streamlit secrets")
+    st.stop()
 
 # ==================================================
 # LLM
 # ==================================================
 llm = ChatGroq(
+    api_key=st.secrets["GROQ_API_KEY"],
     model="llama-3.1-8b-instant",
     temperature=0.3
 )
@@ -46,7 +44,7 @@ final_prompt = PromptTemplate.from_template(
 )
 
 # ==================================================
-# WEBSITE CONTENT LOADER
+# WEBSITE LOADER
 # ==================================================
 def load_website_chunks(url: str):
     response = requests.get(
@@ -77,7 +75,7 @@ def load_website_chunks(url: str):
     return splitter.split_text(text)
 
 # ==================================================
-# HIERARCHICAL SUMMARIZATION
+# SUMMARIZATION
 # ==================================================
 def hierarchical_summarize(chunks):
     partial_summaries = []
@@ -92,8 +90,10 @@ def hierarchical_summarize(chunks):
     return final.content
 
 # ==================================================
-# ACTION
+# UI ACTION
 # ==================================================
+url = st.text_input("Paste a website URL")
+
 if st.button("Summarize"):
     if not validators.url(url):
         st.error("Please enter a valid website URL")
