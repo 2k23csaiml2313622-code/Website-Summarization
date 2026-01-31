@@ -1,0 +1,8 @@
+venv
+.env
+.venv
+RAG Documentation Q&A
+Search Engine
+Q&A Chatbot
+Chatbot SQL
+.streamlit/secrets.toml
